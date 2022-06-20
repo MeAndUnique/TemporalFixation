@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+  Please see the license.txt file included with this distribution for 
+  attribution and copyright information.
+-->
+
+<root>
+	<windowclass name="npc_combat" merge="join">
+		<script file="campaign/scripts/npc_main_5e.lua" />
+		<sheetdata>
+			<label_column name="init_label" insertbefore="speed_label">
+				<static textres="initiative" />
+			</label_column>
+			<number_chartotal name="init" insertbefore="speed_label">
+				<anchored to="init_label" width="40" height="20">
+					<top parent="columnanchor" anchor="bottom" relation="relative" offset="7" />
+					<left offset="97" />
+				</anchored>
+				<font>reference-b-large</font>
+				<rollable />
+				<displaysign />
+				<modifiersize>mini</modifiersize>
+				<modifierfield>inittemporary</modifierfield>
+				<source><name>abilities.dexterity.bonus</name><op>+</op></source>
+				<script>
+					function action(draginfo)
+						local rActor = ActorManager.resolveActor(window.getDatabaseNode());
+						if rActor.sCTNode ~= "" then
+							ActionInit.performRoll(draginfo, rActor);
+						end
+						return true;
+					end
+					function onDragStart(button, x, y, draginfo)
+						return action(draginfo);
+					end
+					function onDoubleClick(x,y)
+						return action();
+					end
+				</script>
+			</number_chartotal>
+
+			<label_column name="speed_label">
+				<anchored to="init" position="topright" offset="0,10">
+					<left anchor="right" offset="10" />
+					<top merge="replace" />
+				</anchored>
+			</label_column>
+			<string_column name="speed">
+				<anchored to="speed_label">
+					<left anchor="right" offset="10" />
+					<top merge="replace" />
+					<right parent="" />
+				</anchored>
+			</string_column>
+		</sheetdata>
+	</windowclass>
+</root>
