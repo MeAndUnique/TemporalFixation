@@ -7,7 +7,7 @@ Temporal Fixation provides the following effects when used with with any ruleset
 * **SHARETURN** - Locks the bearer's initiative to be the same as the target, or source if there is not a single a target, of the effect. And ensures that the bearer of the effect immediately precedes the target in turn order. When it becomes the bearer of the effect's turn any start of turn effects are activated as normal and then the turn skips to the target of the effect. When the turn ends for the target of the effect any end of turn effects for the bearer are activated as well.
 * **FIXINIT: n** - Locks the bearer's initiative to be n, where n is any number.
 
-Additionally, when used in D&D 5e, NPCs are given an initiative field on their sheets that may be used for rolling a specific NPCs initiative.
+When used in D&D 5e, NPCs are given an initiative field on their sheets that may be used for rolling a specific NPCs initiative. Additionally, there is an extra "Roll ALL" option for "Combat: Auto NPC Initiative" which results in dice being physically rolled for any initiative operation on the Combat Tracker as well as any relevant effects or other extension initiative operation to be handled accordingly.
 
 ## Installation
 Download [TemporalFixation.ext](https://github.com/MeAndUnique/TemporalFixation/releases) and place in the extensions subfolder of the Fantasy Grounds data folder.

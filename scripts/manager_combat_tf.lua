@@ -3,15 +3,19 @@
 -- attribution and copyright information.
 --
 
-local onSortCompareOriginal;
+local customSortOriginal;
 local isActorToSkipTurnOriginal;
 local onTurnEndEventOriginal;
 local addNPCOriginal;
 local rollEntryInitOriginal;
 
 function onInit()
-	onSortCompareOriginal = CombatManager.onSortCompare;
-	CombatManager.onSortCompare = onSortCompare;
+	customSortOriginal = CombatManager.getCustomSort();
+	if customSortOriginal then
+		-- Perhaps in the future it might be worth creating the logic branches to play
+		-- nicely with the simple sort, but right now it cuts out too much else.
+		CombatManager.setCustomSort(customSort);
+	end
 	isActorToSkipTurnOriginal = CombatManager.isActorToSkipTurn;
 	CombatManager.isActorToSkipTurn = isActorToSkipTurn;
 	onTurnEndEventOriginal = CombatManager.onTurnEndEvent;
@@ -30,18 +34,12 @@ function onInit()
 	end
 end
 
-function onSortCompare(node1, node2)
-	if not CombatManager.getCustomSort() then
-		-- Perhaps in the future it might be worth creating the logic branches to play
-		-- nicely with the simple sort, but right now it cuts out too much else.
-		return onSortCompareOriginal(node1, node2);
-	end
-
+function customSort(node1, node2)
 	local bHost = Session.IsHost;
 	local sOptCTSI = OptionsManager.getOption("CTSI");
 	if (not bHost) or (sOptCTSI ~= "on") then
-		-- Not much to do if initiative isn't being shown anyway.s
-		return onSortCompareOriginal(node1, node2);
+		-- Not much to do if initiative isn't being shown anyway.
+		return customSortOriginal(node1, node2);
 	end
 
 	local nodeOverride1, nodeOverride2, bAfter1, bAfter2, nFixed1, nFixed2;
@@ -61,30 +59,30 @@ function onSortCompare(node1, node2)
 
 	if nodeOverride1 then
 		if nodeOverride1 == node2 then
-			return bAfter1;
+			return not bAfter1;
 		elseif nodeOverride2 then
 			if nodeOverride1 == nodeOverride2 then
 				if bAfter1 == bAfter2 then
-					return onSortCompareOriginal(node1, node2);
+					return customSortOriginal(node1, node2);
 				else
-					return bAfter1;
+					return not bAfter1;
 				end
 			else
-				return onSortCompare(nodeOverride1, nodeOverride2);
+				return customSort(nodeOverride1, nodeOverride2);
 			end
 		else
-			return onSortCompare(nodeOverride1, node2);
+			return customSort(nodeOverride1, node2);
 		end
 	elseif nodeOverride2 then
 		if node1 == nodeOverride2 then
-			return not bAfter2;
+			return bAfter2;
 		else
-			return onSortCompare(node1, nodeOverride2);
+			return customSort(node1, nodeOverride2);
 		end
 	elseif nFixed1 then
 		if nFixed2 then
 			if nFixed1 == nFixed2 then
-				return onSortCompareOriginal(node1, node2);
+				return customSortOriginal(node1, node2);
 			else
 				return nFixed1 < nFixed2;
 			end
@@ -97,7 +95,7 @@ function onSortCompare(node1, node2)
 		return nInit < nFixed2;
 	end
 
-	return onSortCompareOriginal(node1, node2);
+	return customSortOriginal(node1, node2);
 end
 
 function getInitOverride(nodeCombatant)
