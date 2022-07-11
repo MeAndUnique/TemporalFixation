@@ -22,8 +22,6 @@ function onInit()
 	CombatManager.onTurnEndEvent = onTurnEndEvent;
 
 	if "5E" == Session.RulesetName then
-		addNPCOriginal = CombatManager.getCustomAddNPC();
-		CombatManager.setCustomAddNPC(addNPC);
 		rollEntryInitOriginal = CombatManager2.rollEntryInit;
 		CombatManager2.rollEntryInit = rollEntryInit;
 	end
@@ -191,43 +189,6 @@ function onTurnEndEvent(nodeCT)
 		end
 	end
 	onTurnEndEventOriginal(nodeCT);
-end
-
-local setDBValueOriginal;
-function enableSetValueOverride()
-	if not setDBValueOriginal then
-		setDBValueOriginal = DB.setValue;
-		DB.setValue = setDBValue;
-	end
-end
-
-function disableSetValueOverride()
-	if setDBValueOriginal then
-		DB.setValue = setDBValueOriginal;
-		setDBValueOriginal = nil;
-	end
-end
-
-function addNPC(sClass, nodeNPC, sName)
-	enableSetValueOverride();
-	local nodeEntry = addNPCOriginal(sClass, nodeNPC, sName);
-	local sOptINIT = OptionsManager.getOption("INIT");
-	if sOptINIT == "roll" then
-		local rActor = ActorManager.resolveActor(nodeEntry);
-		local bSecret = CombatManager.isCTHidden(nodeEntry);
-		ActionInit.performRoll(nil, rActor, bSecret);
-	end
-	return nodeEntry;
-end
-
-function setDBValue(vFirst, vSecond, vThird, ...)
-	if vSecond == "init" then
-		local tempInit = DB.getValue(vFirst, "inittemporary", 0);
-		setDBValueOriginal(vFirst, vSecond, vThird, unpack(arg) + tempInit);
-		disableSetValueOverride();
-	else
-		setDBValueOriginal(vFirst, vSecond, vThird, unpack(arg));
-	end
 end
 
 function rollEntryInit(nodeEntry)
