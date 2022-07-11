@@ -36,6 +36,7 @@ SOFTWARE.
 	<base>
 		<script name="ActionInitTF" file="scripts/manager_action_init_tf_5e.lua" ruleset="5E" />
 		<script name="CombatManagerTF" file="scripts/manager_combat_tf.lua" />
+		<script name="CombatRecordManagerTF" file="scripts/manager_combat_record_tf.lua" />
 		<script name="OptionsTF" file="scripts/data_options_tf.lua" />
 
 		<includefile source="campaign/record_npc_5e.xml" ruleset="5E" />
