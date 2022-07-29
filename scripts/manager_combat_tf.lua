@@ -170,22 +170,24 @@ function isActorToSkipTurn(nodeEntry)
 end
 
 function onTurnEndEvent(nodeCT)
-	for _,nodeEntry in ipairs(CombatManager.getSortedCombatantList()) do
-		local nodeSearch = nodeEntry;
-		while nodeSearch do
-			local nodeFound;
-			local rEffect = getEffect(nodeSearch, {"SHARETURN"});
-			if rEffect then
-				local rOverride = buildLinkedOverride(rEffect);
-				if rOverride then
-					nodeFound = rOverride.node;
+	if nodeCT then
+		for _,nodeEntry in ipairs(CombatManager.getSortedCombatantList()) do
+			local nodeSearch = nodeEntry;
+			while nodeSearch do
+				local nodeFound;
+				local rEffect = getEffect(nodeSearch, {"SHARETURN"});
+				if rEffect then
+					local rOverride = buildLinkedOverride(rEffect);
+					if rOverride then
+						nodeFound = rOverride.node;
+					end
 				end
+				if nodeFound == nodeCT then
+					onTurnEndEventOriginal(nodeEntry);
+					break;
+				end
+				nodeSearch = nodeFound;
 			end
-			if nodeFound == nodeCT then
-				onTurnEndEventOriginal(nodeEntry);
-				break;
-			end
-			nodeSearch = nodeFound;
 		end
 	end
 	onTurnEndEventOriginal(nodeCT);
