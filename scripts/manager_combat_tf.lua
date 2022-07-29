@@ -181,7 +181,7 @@ function onTurnEndEvent(nodeCT)
 					nodeFound = rOverride.node;
 				end
 			end
-			if nodeFound == nodeCT then
+			if nodeCT and nodeFound == nodeCT then
 				onTurnEndEventOriginal(nodeEntry);
 				break;
 			end
