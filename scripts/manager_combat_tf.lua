@@ -82,15 +82,15 @@ function customSort(node1, node2)
 			if nFixed1 == nFixed2 then
 				return customSortOriginal(node1, node2);
 			else
-				return nFixed1 < nFixed2;
+				return nFixed1 > nFixed2;
 			end
 		else
 			local nInit = DB.getValue(node2, "initresult", 0);
-			return nFixed1 <= nInit;
+			return nFixed1 > nInit;
 		end
 	elseif nFixed2 then
 		local nInit = DB.getValue(node1, "initresult", 0);
-		return nInit < nFixed2;
+		return nInit >= nFixed2;
 	end
 
 	return customSortOriginal(node1, node2);
