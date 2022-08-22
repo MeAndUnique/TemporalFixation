@@ -43,6 +43,14 @@ SOFTWARE.
 		<includefile source="strings/strings.xml" />
 		
 		<icon name="TemporalFixation" file="graphics/icons/TemporalFixation.png" />
+		
+		<script name="PowerUpTF">
+			function onInit()
+				if PowerUp then
+					PowerUp.registerExtension("Temporal Fixation", "dev_version");
+				end
+			end
+		</script>
 	</base>
 
 	<announcement text="Temporal Fixation dev_version by MeAndUnique." font="emotefont" icon="TemporalFixation" />
