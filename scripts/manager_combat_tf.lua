@@ -32,13 +32,22 @@ function onInit()
 	end
 end
 
-function customSort(node1, node2)
+function customSort(node1, node2, tVisited)
 	local bHost = Session.IsHost;
 	local sOptCTSI = OptionsManager.getOption("CTSI");
 	if (not bHost) or (sOptCTSI ~= "on") then
 		-- Not much to do if initiative isn't being shown anyway.
 		return customSortOriginal(node1, node2);
 	end
+
+	if not tVisited then
+		tVisited = {};
+	end
+	if tVisited[node1] and tVisited[node2] then
+		return customSortOriginal(node1, node2);
+	end
+	tVisited[node1] = true;
+	tVisited[node2] = true;
 
 	local nodeOverride1, nodeOverride2, bAfter1, bAfter2, nFixed1, nFixed2;
 	local rOverride1 = getInitOverride(node1);
@@ -66,16 +75,16 @@ function customSort(node1, node2)
 					return not bAfter1;
 				end
 			else
-				return customSort(nodeOverride1, nodeOverride2);
+				return customSort(nodeOverride1, nodeOverride2, tVisited);
 			end
 		else
-			return customSort(nodeOverride1, node2);
+			return customSort(nodeOverride1, node2, tVisited);
 		end
 	elseif nodeOverride2 then
 		if node1 == nodeOverride2 then
 			return bAfter2;
 		else
-			return customSort(node1, nodeOverride2);
+			return customSort(node1, nodeOverride2, tVisited);
 		end
 	elseif nFixed1 then
 		if nFixed2 then
@@ -173,7 +182,9 @@ function onTurnEndEvent(nodeCT)
 	if nodeCT then
 		for _,nodeEntry in ipairs(CombatManager.getSortedCombatantList()) do
 			local nodeSearch = nodeEntry;
-			while nodeSearch do
+			local tVisited = {};
+			while nodeSearch and not tVisited[nodeSearch] do
+				tVisited[nodeSearch] = true;
 				local nodeFound;
 				local rEffect = getEffect(nodeSearch, {"SHARETURN"});
 				if rEffect then
@@ -209,7 +220,9 @@ function onCombatantEffectUpdated(nodeEffectList)
 	local rOverride;
 	local bHasOverride = false;
 	local nodeCurrent = nodeCombatant;
-	while nodeCurrent do
+	local tVisited = {};
+	while nodeCurrent and not tVisited[nodeCurrent] do
+		tVisited[nodeCurrent] = true;
 		rOverride = getInitOverride(nodeCurrent);
 		if rOverride then
 			bHasOverride = true;
@@ -232,11 +245,13 @@ end
 
 function onCombatantInitiativeUpdated(nodeInit)
 	local nodeCombatant = nodeInit.getParent();
+	local nNewInit = nodeInit.getValue();
 	for _,nodeEntry in ipairs(CombatManager.getSortedCombatantList()) do
-		if nodeEntry ~= nodeCombatant then
+		local nCurrentInit = DB.getValue(nodeEntry, "initresult", 0);
+		if (nodeEntry ~= nodeCombatant) and (nCurrentInit ~= nNewInit) then
 			local rOverride = getInitOverride(nodeEntry);
 			if rOverride and (nodeCombatant == rOverride.node) then
-				DB.setValue(nodeEntry, "initresult", "number", nodeInit.getValue());
+				DB.setValue(nodeEntry, "initresult", "number", nNewInit);
 			end
 		end
 	end
