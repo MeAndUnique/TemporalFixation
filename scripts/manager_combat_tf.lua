@@ -6,8 +6,11 @@
 local customSortOriginal;
 local isActorToSkipTurnOriginal;
 local onTurnEndEventOriginal;
-local addNPCOriginal;
+local rollTypeInit;
+local rollStandardEntryInitOriginal;
 local rollEntryInitOriginal;
+
+local tRerolledCombatants;
 
 function onInit()
 	customSortOriginal = CombatManager.getCustomSort();
@@ -20,11 +23,10 @@ function onInit()
 	CombatManager.isActorToSkipTurn = isActorToSkipTurn;
 	onTurnEndEventOriginal = CombatManager.onTurnEndEvent;
 	CombatManager.onTurnEndEvent = onTurnEndEvent;
-
-	if "5E" == Session.RulesetName then
-		rollEntryInitOriginal = CombatManager2.rollEntryInit;
-		CombatManager2.rollEntryInit = rollEntryInit;
-	end
+	rollTypeInitOriginal = CombatManager.rollTypeInit;
+	CombatManager.rollTypeInit = rollTypeInit;
+	rollStandardEntryInitOriginal = CombatManager.rollStandardEntryInit;
+	CombatManager.rollStandardEntryInit = rollStandardEntryInit;
 
 	if Session.IsHost then
 		DB.addHandler(CombatManager.CT_COMBATANT_PATH .. ".effects", "onChildUpdate", onCombatantEffectUpdated);
@@ -204,19 +206,71 @@ function onTurnEndEvent(nodeCT)
 	onTurnEndEventOriginal(nodeCT);
 end
 
-function rollEntryInit(nodeEntry)
+local setValueOriginal;
+function rollTypeInit(sType, fRollCombatantEntryInit, ...)
+	setValueOriginal = DB.setValue;
+	DB.setValue = setValue;
+	rollTypeInitOriginal(sType, fRollCombatantEntryInit, ...);
+	DB.setValue = setValueOriginal;
+end
+
+function setValue(...)
+	local args = {...};
+	if args[2] == "initresult" and args[4] == -10000 then
+		local rOverride = getInitOverride(args[1]);
+		if rOverride then
+			return;
+		end
+	end
+	setValueOriginal(...)
+end
+
+function rollStandardEntryInit(tInit)
+	if not tInit or not tInit.nodeEntry then
+		return;
+	end
+
 	local sOptINIT = OptionsManager.getOption("INIT");
-	if sOptINIT == "roll" then
-		local rActor = ActorManager.resolveActor(nodeEntry);
-		local bSecret = CombatManager.isCTHidden(nodeEntry);
+	if sOptINIT == "roll" and ActionInit and ActionInit.performRoll then
+		local rActor = ActorManager.resolveActor(tInit.nodeEntry);
+		local bSecret = CombatManager.isCTHidden(tInit.nodeEntry);
 		ActionInit.performRoll(nil, rActor, bSecret);
+	elseif CombatManagerTF.getInitOverride(tInit.nodeEntry) then
+		local sFormat = Interface.getString("message_ovderridden_init");
+		local rActor = ActorManager.resolveActor(tInit.nodeEntry);
+		local sMsg = string.format(sFormat, rActor.sName);
+		ChatManager.SystemMessage(sMsg);
 	else
-		rollEntryInitOriginal(nodeEntry);
+		rollStandardEntryInitOriginal(tInit);
 	end
 end
 
 function onCombatantEffectUpdated(nodeEffectList)
 	local nodeCombatant = nodeEffectList.getParent();
+	local nTargetInit, bHasOverride = calculateInit(nodeCombatant);
+	DB.setValue(nodeCombatant, "initresult", "number", nTargetInit);
+	DB.setStatic(DB.getPath(nodeCombatant, "initresult"), bHasOverride);
+end
+
+function onCombatantInitiativeUpdated(nodeInit)
+	local nNewInit = nodeInit.getValue();
+	if newInit == -10000 then
+		return; -- This indicates a temporary "clearing" before setting the real value.
+	end
+
+	local nodeCombatant = nodeInit.getParent();
+	for _,nodeEntry in ipairs(CombatManager.getSortedCombatantList()) do
+		local nCurrentInit = DB.getValue(nodeEntry, "initresult", 0);
+		if (nodeEntry ~= nodeCombatant) and (nCurrentInit ~= nNewInit) then
+			local rOverride = getInitOverride(nodeEntry);
+			if rOverride and (nodeCombatant == rOverride.node) then
+				DB.setValue(nodeEntry, "initresult", "number", nNewInit);
+			end
+		end
+	end
+end
+
+function calculateInit(nodeCombatant)
 	local rOverride;
 	local bHasOverride = false;
 	local nodeCurrent = nodeCombatant;
@@ -239,20 +293,5 @@ function onCombatantEffectUpdated(nodeEffectList)
 		nTargetInit = DB.getValue(nodeCurrent, "initresult", 0);
 	end
 
-	DB.setValue(nodeCombatant, "initresult", "number", nTargetInit);
-	DB.setStatic(DB.getPath(nodeCombatant, "initresult"), bHasOverride);
-end
-
-function onCombatantInitiativeUpdated(nodeInit)
-	local nodeCombatant = nodeInit.getParent();
-	local nNewInit = nodeInit.getValue();
-	for _,nodeEntry in ipairs(CombatManager.getSortedCombatantList()) do
-		local nCurrentInit = DB.getValue(nodeEntry, "initresult", 0);
-		if (nodeEntry ~= nodeCombatant) and (nCurrentInit ~= nNewInit) then
-			local rOverride = getInitOverride(nodeEntry);
-			if rOverride and (nodeCombatant == rOverride.node) then
-				DB.setValue(nodeEntry, "initresult", "number", nNewInit);
-			end
-		end
-	end
+	return nTargetInit, bHasOverride;
 end
